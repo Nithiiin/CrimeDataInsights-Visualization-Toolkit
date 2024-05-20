@@ -25,7 +25,7 @@
 ## Project Structure
 
 - `code.ipynb`: Main Jupyter notebook containing the code and interactive widgets for analysis and visualization.
-- `data.csv`: The dataset used for analysis (make sure this file is present or replace it with your own).
+- `data`: [The dataset used for analysis (make sure this file is present or replace it with your own).](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2/data_preview)
 
 ## Dependencies
 
