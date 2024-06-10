@@ -1,0 +1,403 @@
+---
+title: "Project"
+author: "Nithin"
+date: "2023-12-04"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#LOADING THE DATA
+rawdata_df <- read.csv("data.csv",nrows = 50000)
+
+data_df <-na.omit(rawdata_df)
+
+data_df[,c('Primary.Type','Description','Location.Description','Arrest')]
+```
+What factors contribute most to the likelihood of an arrest in reported incidents
+```{r}
+##What factors contribute most to the likelihood of an arrest in reported incident?
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+
+# Assuming your dataframe is named 'df' and the date column is named 'date_column'
+# Convert the date column to Date type if it's not already
+# Assuming your dataframe is 'df' and the date column is 'date_column'
+data_df$Date <- as.POSIXct(data_df$Date, format = "%Y-%m-%d %H:%M:%S")
+
+# Now df$date_column is in POSIXct format
+
+data_df$Date <- as.Date(data_df$Date)
+
+# Extract the month from the date
+data_df$month <- month(data_df$Date, label = TRUE)
+
+# Summarize the data by month (modify this step according to what you're summarizing)
+monthly_data <- data_df %>%
+  group_by(month) %>%
+  summarise(count = n() # Replace 'n()' with your specific aggregation function
+
+# Plotting the bar chart
+ggplot(monthly_data, aes(x = month, y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(x = "Month", y = "Count", title = "Monthly Data Summary")
+
+```
+
+```{r}
+#Location des , description crime type, 
+#EDA Analysis
+
+library(ggplot2)
+
+data_df$Arrest <- as.factor(data_df$Arrest)
+
+# Plotting with ggplot2
+ggplot(data_df, aes(x = Primary.Type, fill = Arrest)) + 
+  geom_bar(position = "dodge") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  labs(x = "Crime Type", y = "Count", fill = "Arrest Made", title = "Arrests by Crime Type") 
+
+
+```
+```{r}
+library(tm)
+library(wordcloud)
+library(caret)
+
+descriptions <- paste(data_df$Location.Description, collapse = " ")
+
+corpus <- Corpus(VectorSource(descriptions))
+
+# Convert the text to lower case
+corpus <- tm_map(corpus, content_transformer(tolower))
+
+# Remove English common stopwords
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+# Remove numbers
+corpus <- tm_map(corpus, removeNumbers)
+
+# Remove punctuation
+corpus <- tm_map(corpus, removePunctuation)
+
+# Eliminate extra white spaces
+corpus_loc <- tm_map(corpus, stripWhitespace)
+# Generate the word cloud
+wordcloud(words = corpus_loc, scale=c(5,0.5), max.words=1000, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+
+```
+```{r}
+dtm <- DocumentTermMatrix(corpus_loc)
+words_matrix <- as.matrix(dtm)
+words_matrix
+colnames(words_matrix) <- make.names(colnames(words_matrix))
+loc_df <- as.data.frame(words_matrix)
+length(colnames(loc_df))
+
+```
+```{r}
+library(dplyr)
+library(purrr)
+tolower(data_df$Location.Description)
+# Assuming df is your dataframe and it has columns 'word' and 'Arrest'
+# Convert 'Arrest' to a binary format
+data_df$Arrest <- as.numeric(data_df$Arrest == "true")
+
+# Define a function to perform chi-squared test and return the p-value
+get_p_value <- function(word) {
+  # Create a contingency table for each word
+  
+  contingency_table <- table(data_df$Arrest,grepl(word, tolower(data_df$Location.Description)))
+  
+  # Perform the chi-squared test
+  test_result <- chisq.test(contingency_table)
+  
+  # Return the p-value
+  return(test_result$p.value)
+}
+data_df$Arrest
+# Calculate p-values for each word
+words <- unique(colnames(words_df)) # List of all unique words
+p_values <- sapply(words, get_p_value)
+contingency_table <- table(grepl(words, tolower(data_df$Location.Description)), data_df$Arrest)
+contingency_table
+# Output the p-values
+p_values
+
+```
+
+```{r}
+data_temp<-read.table("Review_subset.csv",header=TRUE)
+data_temp
+
+omg<-read.table("words.csv")
+
+omg<-omg[,1]
+
+length(omg)
+
+doc_word<-read.table("word_freq.csv")
+
+doc_word
+
+names(doc_word)<-c("Review ID","Word ID","Times Word" )
+
+doc_word
+```
+
+
+
+
+```{r}
+library(tm)
+library(wordcloud)
+
+descriptions <- paste(data_df$Description, collapse = " ")
+
+corpus <- Corpus(VectorSource(descriptions))
+
+# Convert the text to lower case
+corpus <- tm_map(corpus, content_transformer(tolower))
+
+# Remove English common stopwords
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+# Remove numbers
+corpus <- tm_map(corpus, removeNumbers)
+
+# Remove punctuation
+corpus <- tm_map(corpus, removePunctuation)
+
+# Eliminate extra white spaces
+corpus_crime <- tm_map(corpus, stripWhitespace)
+
+# Generate the word cloud
+wordcloud(words = corpus_crime, scale=c(5,0.5), max.words=1000, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+
+dtm <- DocumentTermMatrix(corpus_crime)
+words_matrix <- as.matrix(dtm)
+words_matrix
+colnames(words_matrix) <- make.names(colnames(words_matrix))
+dec_df <- as.data.frame(words_matrix)
+length(colnames(dec_df))
+```
+
+```{r}
+req_df <- data_df[,c('ID','Primary.Type','Description','Location.Description','Arrest')]
+req_df$caseid <- seq_len(nrow(req_df))
+req_df
+
+req_df$CombinedDescription <- paste(req_df$Description, req_df$Location.Description, sep = " ")
+req_df
+
+descriptions <- paste(req_df$CombinedDescription, collapse = " ")
+descriptions
+corpus_comdescorpus <- Corpus(VectorSource(descriptions))
+corpus
+# Convert the text to lower case
+corpus <- tm_map(corpus, content_transformer(tolower))
+
+# Remove English common stopwords
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+# Remove numbers
+corpus <- tm_map(corpus, removeNumbers)
+
+# Remove punctuation
+corpus <- tm_map(corpus, removePunctuation)
+
+# Eliminate extra white spaces
+corpus_comdes <- tm_map(corpus, stripWhitespace)
+
+corpus_comdes
+
+# Generate the word cloud
+wordcloud(words = corpus_comdes, scale=c(5,0.5), max.words=1000, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+
+dtm <- DocumentTermMatrix(corpus_comdes)
+words_matrix <- as.matrix(dtm)
+words_matrix
+colnames(words_matrix) <- make.names(colnames(words_matrix))
+words_df <- as.data.frame(words_matrix)
+
+unique(colnames(words_df))
+
+words_list <- c(colnames(words_df)) # replace with your actual words
+# Create a dataframe
+req_worddf <- data.frame(ID = 1:length(words_list), Words = words_list)
+words_list
+```
+
+```{r}
+library(dplyr)
+library(tidytext)
+
+# Assuming df1 is your first dataframe with caseid and CombinedDescription
+# And req_worddf is your second dataframe with wordid and Words
+
+# Tokenize the CombinedDescription
+words <- req_df %>%
+  unnest_tokens(word, CombinedDescription)
+
+# Count the word occurrences for each caseid
+word_counts <- words %>%
+  group_by(caseid, word) %>%
+  summarize(wordoccurance = n()) %>%
+  ungroup()
+
+# Join with the req_worddf to get the wordid
+final_df <- word_counts %>%
+  left_join(req_worddf, by = c("word" = "Words")) %>%
+  select(case_id = caseid, word_id = wordid, wordoccurance)
+
+# Check the final data frame
+final_df
+
+```
+
+```{r}
+words <- req_df %>%
+  unnest_tokens(word, CombinedDescription)
+
+# Ensure that 'word' is a character since it will be matched with df_words
+words$word <- as.character(words$word)
+
+# Join with the req_worddf to get the wordid
+word_counts <- words %>%
+  count(caseid, word) %>%
+  left_join(req_worddf, by = c("word" = "Words"))
+
+# Create the final dataframe with the required columns
+testfinal_df <- word_counts %>%
+  filter(!is.na(wordid)) %>%
+  select(case_id = caseid, word_id = wordid, wordoccurance = n)
+
+# Ensure that all columns are of type integer
+testfinal_df$case_id <- as.integer(testfinal_df$case_id)
+testfinal_df$word_id <- as.integer(testfinal_df$word_id)
+testfinal_df$wordoccurance <- as.integer(testfinal_df$wordoccurance)
+
+# Check the final data frame
+print(testfinal_df)
+```
+
+
+#Lasso
+```{r}
+Y<-as.numeric(req_df$Arrest==1)
+library(gamlr)
+
+source("naref.R")
+
+req_df$Primary.Type<-as.factor(req_df$Primary.Type)
+
+class(req_df$Primary.Type)
+
+req_df$Primary.Type<-naref(req_df$Primary.Type)
+
+crimetype<-data.frame(req_df$Primary.Type)
+
+x_cat<-sparse.model.matrix(~., data=crimetype)[,-1]
+
+colnames(x_cat)<-levels(req_df$Primary.Type)[-1]
+
+lasso1<- gamlr(x_cat, y=Y, standardize=FALSE,family="binomial",
+lambda.min.ratio=1e-3)
+
+plot(lasso1)
+
+
+```
+
+```{r}
+
+
+# Assuming your gamlr model is stored in a variable named 'model_gamlr'
+
+# Get the coefficients at the optimal complexity
+opt_coefs <- coef(lasso1)
+
+# Print the coefficients
+print(opt_coefs)
+
+
+dev <- lasso1$deviance[which.min(AICc(lasso1))]
+dev0<- lasso1$deviance[1]
+1-dev/dev0
+```
+
+```{r}
+
+spm<-sparseMatrix(i=testfinal_df[,1],
+j=testfinal_df[,2],
+x=testfinal_df[,3],
+dimnames=list(id=1:nrow(req_df),
+words=words_list))
+)
+
+x_cat2<-cbind(x_cat,spm)
+lasso2 <- gamlr(x_cat2, y=Y,lambda.min.ratio=1e-3,family="binomial")
+plot(lasso2)
+
+```
+```{r}
+opt_coefs <- coef(lasso2)
+
+# Print the coefficients
+print(opt_coefs)
+
+1- lasso2$deviance[which.min(AICc(lasso2))]/lasso2$deviance[1]
+
+```
+
+
+```{r}
+library(knitr) 
+Betas <- drop(coef(lasso2)) 
+length(Betas)
+sum(Betas[29:457]!=0) 
+o<-order(Betas[29:457],decreasing=TRUE)
+kable(Betas[29:457][o[1:10]])
+names(Betas)
+Betas
+
+ans<-Betas[names(Betas) %in% colnames(dec_df)]
+ans
+o<-order(ans,decreasing=TRUE)
+kable(ans[o[1:10]])
+```
+
+```{r}
+cv.fit <- cv.gamlr(x_cat2,
+y=Y,
+lambda.min.ratio=1e-3,
+family="binomial",
+verb=TRUE)
+
+kable(cv.fit$lambda.min)
+
+kable(cv.fit$lambda.1se) 
+ 
+Beta_cv1se<-coef(cv.fit) 
+
+kable(table(Beta_cv1se[,1]!=0)) 
+
+Beta_cvmin<-coef(cv.fit, select="min") 
+
+kable(table(Beta_cvmin[,1]!=0)) 
+
+plot(cv.fit)
+abline(v=log(lasso2$lambda[which.min(AICc(lasso2))]))
+
+```
+
+
+
+
